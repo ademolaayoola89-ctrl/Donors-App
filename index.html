@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BloodLink – Donor Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --crimson: #C0172B;
+    --crimson-deep: #8B0F1E;
+    --crimson-glow: rgba(192,23,43,0.18);
+    --bg: #0D0D0F;
+    --surface: #141418;
+    --surface2: #1C1C22;
+    --surface3: #232329;
+    --border: rgba(255,255,255,0.07);
+    --border-active: rgba(192,23,43,0.5);
+    --text: #F0EEF0;
+    --text-muted: #7A7880;
+    --text-dim: #4A484F;
+    --success: #2ECC71;
+    --warning: #F39C12;
+    --info: #3498DB;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(192,23,43,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 10% 90%, rgba(192,23,43,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,13,15,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-drop {
+    width: 32px; height: 32px;
+    background: var(--crimson);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 16px var(--crimson-glow);
+    flex-shrink: 0;
+  }
+
+  .logo-drop::after {
+    content: '';
+    width: 10px; height: 10px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    transform: rotate(45deg);
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 24px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .header-stat strong {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--crimson);
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+    line-height: 1.1;
+  }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .form-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--crimson), var(--crimson-deep), transparent);
+    border-radius: 20px 20px 0 0;
+  }
+
+  /* ── FORM GRID ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  input, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237A7880' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+    cursor: pointer;
+  }
+
+  select option { background: var(--surface2); }
+
+  input:focus, select:focus {
+    border-color: var(--crimson);
+    box-shadow: 0 0 0 3px var(--crimson-glow);
+    background: var(--surface3);
+  }
+
+  input::placeholder { color: var(--text-dim); }
+
+  /* ── BUTTONS ── */
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 13px 28px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--crimson);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(192,23,43,0.35);
+  }
+
+  .btn-primary:hover {
+    background: #D41830;
+    box-shadow: 0 6px 28px rgba(192,23,43,0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+
+  .btn-edit {
+    background: rgba(52,152,219,0.12);
+    color: var(--info);
+    border: 1px solid rgba(52,152,219,0.25);
+    font-size: 0.78rem;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+  }
+
+  .btn-edit:hover { background: rgba(52,152,219,0.22); }
+
+  .btn-delete {
+    background: rgba(192,23,43,0.1);
+    color: var(--crimson);
+    border: 1px solid rgba(192,23,43,0.2);
+    font-size: 0.78rem;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+  }
+
+  .btn-delete:hover { background: rgba(192,23,43,0.2); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .toast-msg {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: slideIn 0.3s ease, fadeOut 0.4s ease 2.6s forwards;
+    pointer-events: all;
+  }
+
+  .toast-success { border-left: 3px solid var(--success); }
+  .toast-error   { border-left: 3px solid var(--crimson); }
+  .toast-info    { border-left: 3px solid var(--info); }
+
+  @keyframes slideIn {
+    from { transform: translateX(80px); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+
+  @keyframes fadeOut {
+    to { opacity: 0; transform: translateX(20px); }
+  }
+
+  /* ── SEARCH / FILTER BAR ── */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  #searchInput {
+    padding-left: 40px;
+    background: var(--surface);
+  }
+
+  .filter-select {
+    width: auto;
+    background: var(--surface);
+    font-size: 0.85rem;
+    padding: 11px 36px 11px 14px;
+  }
+
+  /* ── TABLE ── */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .table-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .table-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .donor-count {
+    background: var(--crimson);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  thead tr {
+    background: var(--surface2);
+  }
+
+  th {
+    text-align: left;
+    padding: 13px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+  }
+
+  th:hover { color: var(--text); }
+
+  th.sorted { color: var(--crimson); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody tr:hover { background: var(--surface2); }
+
+  td {
+    padding: 14px 20px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  td.name-cell {
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  /* Donor type badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-voluntary  { background: rgba(46,204,113,0.12); color: #2ECC71; border: 1px solid rgba(46,204,113,0.25); }
+  .badge-replacement { background: rgba(243,156,18,0.12); color: #F39C12; border: 1px solid rgba(243,156,18,0.25); }
+  .badge-commercial  { background: rgba(52,152,219,0.12); color: #3498DB; border: 1px solid rgba(52,152,219,0.25); }
+  .badge-autologous  { background: rgba(155,89,182,0.12); color: #9B59B6; border: 1px solid rgba(155,89,182,0.25); }
+
+  .actions { display: flex; gap: 8px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    padding: 72px 32px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .empty-icon {
+    width: 64px; height: 64px;
+    background: var(--surface2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 1.8rem;
+  }
+
+  .empty-state h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .empty-state p { font-size: 0.875rem; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+    width: min(480px, 90vw);
+    transform: translateY(24px);
+    transition: transform 0.25s;
+  }
+
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+
+  .modal p { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 28px; }
+
+  .modal .btn-row { justify-content: flex-end; }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .stat-box:hover { border-color: rgba(192,23,43,0.3); transform: translateY(-2px); }
+
+  .stat-box::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: var(--crimson-glow);
+    transform: translate(30%, 30%);
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-sub {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* ── EDIT MODE ── */
+  .form-card.editing {
+    border-color: rgba(52,152,219,0.4);
+    box-shadow: 0 0 0 1px rgba(52,152,219,0.15);
+  }
+
+  .form-card.editing::before {
+    background: linear-gradient(90deg, var(--info), rgba(52,152,219,0.3), transparent);
+  }
+
+  .edit-notice {
+    display: none;
+    background: rgba(52,152,219,0.1);
+    border: 1px solid rgba(52,152,219,0.25);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.85rem;
+    color: var(--info);
+    margin-bottom: 20px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .form-card.editing .edit-notice { display: flex; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .stats-strip { grid-template-columns: repeat(2, 1fr); }
+    .form-grid   { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    header { padding: 0 16px; }
+    .container { padding: 24px 16px 60px; }
+    .header-stats { display: none; }
+    .form-card { padding: 24px; }
+  }
+
+  @media (max-width: 480px) {
+    .stats-strip { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-value  { font-size: 1.6rem; }
+  }
+
+  /* Row animation */
+  tbody tr { animation: rowIn 0.25s ease both; }
+
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <div class="logo-drop"></div>
+    BloodLink
+  </div>
+  <div class="header-stats">
+    <div class="header-stat"><strong id="hTotal">0</strong> Donors</div>
+    <div class="header-stat"><strong id="hVoluntary">0</strong> Voluntary</div>
+    <div class="header-stat"><strong id="hMale">0</strong> Male</div>
+    <div class="header-stat"><strong id="hFemale">0</strong> Female</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── STATS STRIP ── -->
+  <div class="stats-strip">
+    <div class="stat-box">
+      <div class="stat-label">Total Donors</div>
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-sub">Registered</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Voluntary</div>
+      <div class="stat-value" id="statVol">0</div>
+      <div class="stat-sub">Unpaid donors</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Replacement</div>
+      <div class="stat-value" id="statRep">0</div>
+      <div class="stat-sub">Family/friend</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Avg Age</div>
+      <div class="stat-value" id="statAge">—</div>
+      <div class="stat-sub">Years</div>
+    </div>
+  </div>
+
+  <!-- ── REGISTER FORM ── -->
+  <div class="section-label">Donor Management</div>
+  <div class="section-title">Register New Donor</div>
+
+  <div class="form-card" id="formCard">
+    <div class="edit-notice">
+      ✏️ <span>Editing donor record — make your changes and click <strong>Update Donor</strong></span>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input type="text" id="fullName" placeholder="e.g. Ademola Nathaniel">
+      </div>
+      <div class="form-group">
+        <label for="age">Age</label>
+        <input type="number" id="age" placeholder="e.g. 25" min="16" max="65">
+      </div>
+      <div class="form-group">
+        <label for="sex">Sex</label>
+        <select id="sex">
+          <option value="">— Select Sex —</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" placeholder="e.g. 08064832574">
+      </div>
+      <div class="form-group full">
+        <label for="address">Address</label>
+        <input type="text" id="address" placeholder="e.g. 11 Adeolu Street, Lagos State">
+      </div>
+      <div class="form-group">
+        <label for="donorType">Donor Type</label>
+        <select id="donorType">
+          <option value="">— Select Type —</option>
+          <option value="Voluntary">Voluntary</option>
+          <option value="Replacement">Replacement</option>
+          <option value="Commercial">Commercial</option>
+          <option value="Autologous">Autologous</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="dob">Date of Birth</label>
+        <input type="date" id="dob">
+      </div>
+      <div class="form-group">
+        <label for="bloodGroup">Blood Group</label>
+        <select id="bloodGroup">
+          <option value="">— Select —</option>
+          <option>A+</option><option>A-</option>
+          <option>B+</option><option>B-</option>
+          <option>O+</option><option>O-</option>
+          <option>AB+</option><option>AB-</option>
+          <option>Unknown</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="lastDonation">Last Donation Date</label>
+        <input type="date" id="lastDonation">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="saveBtn" onclick="saveDonor()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
+        Save Donor
+      </button>
+      <button class="btn btn-ghost" id="cancelBtn" onclick="cancelEdit()" style="display:none">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ── ALL DONORS ── -->
+  <div class="section-label">Records</div>
+  <div class="section-title">All Donors</div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" class="filter-select" placeholder="Search by name, phone, address…" oninput="renderTable()" style="width:100%; padding-left:40px;">
+    </div>
+    <select class="filter-select" id="filterType" onchange="renderTable()">
+      <option value="">All Types</option>
+      <option value="Voluntary">Voluntary</option>
+      <option value="Replacement">Replacement</option>
+      <option value="Commercial">Commercial</option>
+      <option value="Autologous">Autologous</option>
+    </select>
+    <select class="filter-select" id="filterSex" onchange="renderTable()">
+      <option value="">All Sex</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Donor Records</span>
+      <span class="donor-count" id="visibleCount">0 donors</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('id')">#</th>
+            <th onclick="sortBy('fullName')">Full Name</th>
+            <th onclick="sortBy('age')">Age</th>
+            <th onclick="sortBy('sex')">Sex</th>
+            <th>Phone</th>
+            <th onclick="sortBy('donorType')">Donor Type</th>
+            <th onclick="sortBy('bloodGroup')">Blood Group</th>
+            <th onclick="sortBy('lastDonation')">Last Donation</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="donorTableBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="emptyState" style="display:none">
+      <div class="empty-icon">🩸</div>
+      <h3>No donors found</h3>
+      <p>Register your first donor above, or adjust your search filters.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRMATION MODAL ── -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h2>Delete Donor Record?</h2>
+    <p>This action cannot be undone. The donor's information will be permanently removed from this device.</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-primary" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST CONTAINER ── -->
+<div id="toast"></div>
+
+<script>
+  // ── STATE ──
+  let donors = JSON.parse(localStorage.getItem('bloodlink_donors') || '[]');
+  let editId = null;
+  let deleteTargetId = null;
+  let sortKey = 'id';
+  let sortAsc = true;
+
+  // ── SAVE ──
+  function saveDonor() {
+    const name   = document.getElementById('fullName').value.trim();
+    const age    = document.getElementById('age').value.trim();
+    const sex    = document.getElementById('sex').value;
+    const phone  = document.getElementById('phone').value.trim();
+    const addr   = document.getElementById('address').value.trim();
+    const type   = document.getElementById('donorType').value;
+    const dob    = document.getElementById('dob').value;
+    const bg     = document.getElementById('bloodGroup').value;
+    const last   = document.getElementById('lastDonation').value;
+
+    if (!name || !age || !sex || !type) {
+      toast('Please fill in Name, Age, Sex, and Donor Type.', 'error');
+      return;
+    }
+    if (age < 16 || age > 65) {
+      toast('Donor age must be between 16 and 65.', 'error');
+      return;
+    }
+
+    if (editId !== null) {
+      const idx = donors.findIndex(d => d.id === editId);
+      if (idx > -1) {
+        donors[idx] = { ...donors[idx], fullName: name, age: +age, sex, phone, address: addr, donorType: type, dob, bloodGroup: bg, lastDonation: last };
+        toast('Donor record updated successfully.', 'success');
+      }
+      cancelEdit();
+    } else {
+      const newDonor = {
+        id: Date.now(),
+        fullName: name, age: +age, sex, phone, address: addr,
+        donorType: type, dob, bloodGroup: bg, lastDonation: last,
+        registeredAt: new Date().toISOString()
+      };
+      donors.unshift(newDonor);
+      toast('Donor registered successfully!', 'success');
+      clearForm();
+    }
+
+    persist();
+    renderTable();
+    updateStats();
+  }
+
+  // ── EDIT ──
+  function editDonor(id) {
+    const d = donors.find(x => x.id === id);
+    if (!d) return;
+    editId = id;
+
+    document.getElementById('fullName').value    = d.fullName || '';
+    document.getElementById('age').value         = d.age || '';
+    document.getElementById('sex').value         = d.sex || '';
+    document.getElementById('phone').value       = d.phone || '';
+    document.getElementById('address').value     = d.address || '';
+    document.getElementById('donorType').value   = d.donorType || '';
+    document.getElementById('dob').value         = d.dob || '';
+    document.getElementById('bloodGroup').value  = d.bloodGroup || '';
+    document.getElementById('lastDonation').value = d.lastDonation || '';
+
+    document.getElementById('saveBtn').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg> Update Donor`;
+    document.getElementById('cancelBtn').style.display = 'flex';
+    document.getElementById('formCard').classList.add('editing');
+    document.querySelector('.section-title').textContent = 'Edit Donor Record';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast('Editing donor — make your changes and click Update.', 'info');
+  }
+
+  function cancelEdit() {
+    editId = null;
+    clearForm();
+    document.getElementById('saveBtn').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg> Save Donor`;
+    document.getElementById('cancelBtn').style.display = 'none';
+    document.getElementById('formCard').classList.remove('editing');
+    document.querySelector('.section-title').textContent = 'Register New Donor';
+  }
+
+  function clearForm() {
+    ['fullName','age','sex','phone','address','donorType','dob','bloodGroup','lastDonation'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = el.tagName === 'SELECT' ? '' : '';
+    });
+  }
+
+  // ── DELETE ──
+  function promptDelete(id) {
+    deleteTargetId = id;
+    document.getElementById('deleteModal').classList.add('open');
+  }
+
+  function closeDeleteModal() {
+    deleteTargetId = null;
+    document.getElementById('deleteModal').classList.remove('open');
+  }
+
+  document.getElementById('confirmDeleteBtn').onclick = function() {
+    donors = donors.filter(d => d.id !== deleteTargetId);
+    persist();
+    renderTable();
+    updateStats();
+    closeDeleteModal();
+    toast('Donor record deleted.', 'error');
+  };
+
+  // ── SORT ──
+  function sortBy(key) {
+    if (sortKey === key) sortAsc = !sortAsc;
+    else { sortKey = key; sortAsc = true; }
+    document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
+    renderTable();
+  }
+
+  // ── RENDER TABLE ──
+  function renderTable() {
+    const search     = document.getElementById('searchInput').value.toLowerCase();
+    const filterType = document.getElementById('filterType').value;
+    const filterSex  = document.getElementById('filterSex').value;
+
+    let filtered = donors.filter(d => {
+      const matchSearch = !search ||
+        d.fullName?.toLowerCase().includes(search) ||
+        d.phone?.toLowerCase().includes(search) ||
+        d.address?.toLowerCase().includes(search) ||
+        d.bloodGroup?.toLowerCase().includes(search);
+      const matchType = !filterType || d.donorType === filterType;
+      const matchSex  = !filterSex  || d.sex === filterSex;
+      return matchSearch && matchType && matchSex;
+    });
+
+    // sort
+    filtered.sort((a, b) => {
+      let va = a[sortKey] ?? '', vb = b[sortKey] ?? '';
+      if (typeof va === 'number') return sortAsc ? va - vb : vb - va;
+      return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+
+    const tbody = document.getElementById('donorTableBody');
+    const empty = document.getElementById('emptyState');
+    const countEl = document.getElementById('visibleCount');
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      countEl.textContent = '0 donors';
+      return;
+    }
+
+    empty.style.display = 'none';
+    countEl.textContent = `${filtered.length} donor${filtered.length !== 1 ? 's' : ''}`;
+
+    const badgeClass = { Voluntary:'badge-voluntary', Replacement:'badge-replacement', Commercial:'badge-commercial', Autologous:'badge-autologous' };
+
+    tbody.innerHTML = filtered.map((d, i) => `
+      <tr>
+        <td style="color:var(--text-dim); font-size:0.8rem">${i + 1}</td>
+        <td class="name-cell">${esc(d.fullName)}</td>
+        <td>${d.age || '—'}</td>
+        <td>${d.sex || '—'}</td>
+        <td style="color:var(--text-muted)">${esc(d.phone) || '—'}</td>
+        <td><span class="badge ${badgeClass[d.donorType] || ''}">${esc(d.donorType) || '—'}</span></td>
+        <td><span style="background:var(--surface3);padding:3px 8px;border-radius:6px;font-size:0.78rem">${esc(d.bloodGroup) || '—'}</span></td>
+        <td style="color:var(--text-muted);font-size:0.83rem">${d.lastDonation ? formatDate(d.lastDonation) : '—'}</td>
+        <td>
+          <div class="actions">
+            <button class="btn btn-edit" onclick="editDonor(${d.id})">✏️ Edit</button>
+            <button class="btn btn-delete" onclick="promptDelete(${d.id})">🗑 Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // ── STATS ──
+  function updateStats() {
+    const total = donors.length;
+    const vol   = donors.filter(d => d.donorType === 'Voluntary').length;
+    const rep   = donors.filter(d => d.donorType === 'Replacement').length;
+    const male  = donors.filter(d => d.sex === 'Male').length;
+    const fem   = donors.filter(d => d.sex === 'Female').length;
+    const ages  = donors.map(d => d.age).filter(Boolean);
+    const avgAge = ages.length ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : null;
+
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statVol').textContent   = vol;
+    document.getElementById('statRep').textContent   = rep;
+    document.getElementById('statAge').textContent   = avgAge ?? '—';
+
+    document.getElementById('hTotal').textContent    = total;
+    document.getElementById('hVoluntary').textContent = vol;
+    document.getElementById('hMale').textContent     = male;
+    document.getElementById('hFemale').textContent   = fem;
+  }
+
+  // ── PERSIST ──
+  function persist() {
+    localStorage.setItem('bloodlink_donors', JSON.stringify(donors));
+  }
+
+  // ── TOAST ──
+  function toast(msg, type = 'info') {
+    const container = document.getElementById('toast');
+    const el = document.createElement('div');
+    el.className = `toast-msg toast-${type}`;
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    el.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 3100);
+  }
+
+  // ── HELPERS ──
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
+  // Close modal on overlay click
+  document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+  });
+
+  // ── INIT ──
+  renderTable();
+  updateStats();
+</script>
+</body>
+</html>
